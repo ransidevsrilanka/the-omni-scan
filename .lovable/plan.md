@@ -1,158 +1,201 @@
 
 
-# Island Couture — Premium E-Commerce Platform
+# Implementation Plan — Island Couture Phase 2
 
-## Brand Identity & Design System
-- **Brand Name**: Island Couture
-- **Aesthetic**: Dark, bold, premium feel — deep blacks, sharp contrasts, subtle textures
-- **Typography**: Premium display fonts (e.g., Bebas Neue / Oswald for headings, Inter or similar clean sans-serif for body) — no default system fonts
-- **Color Palette**: Deep charcoal/black backgrounds, crisp white text, gold or warm accent color for CTAs and highlights
-- **Currencies**: LKR (Sri Lankan Rupees) as primary, USD as secondary — with a currency switcher
+This is a large scope covering authentication, database, payments, emails, animations, and admin functionality. Here is the full breakdown.
 
 ---
 
-## 1. Storefront (Customer-Facing)
+## 1. Database Schema (Migration)
 
-### Homepage
-- Full-screen hero section with bold imagery and tagline
-- Featured collections / new arrivals carousel
-- Category showcase grid
-- "Shop the Look" lifestyle section
-- Newsletter signup with bold CTA
-- Footer with links to policies, social media, and quick navigation
+Create all core tables in one migration:
 
-### Navigation
-- Sticky top navbar with brand logo, search, cart icon, user account icon, currency switcher
-- Mega-menu dropdown for product categories (categories pulled dynamically from the database)
-- Mobile hamburger menu with smooth slide-in animation
+```text
+Tables to create:
+─────────────────────────────────────────────────
+profiles          → user_id, first_name, last_name, phone, avatar_url
+user_roles        → user_id, role (admin/moderator/user enum)
+categories        → id, name, slug, image_url, parent_id, position, is_visible
+products          → id, name, slug, description, materials, care, price_lkr, price_usd, is_visible, is_featured, created_at
+product_variants  → id, product_id, size, color, stock, sku
+product_images    → id, product_id, url, position
+addresses         → id, user_id, label, first_name, last_name, phone, address, city, postal_code, country, is_default
+wishlists         → id, user_id, product_id
+orders            → id, user_id, order_number, status, subtotal_lkr, subtotal_usd, shipping_lkr, shipping_usd, total_lkr, total_usd, shipping_address (jsonb), payment_method, payment_status, payhere_order_id, notes, created_at
+order_items       → id, order_id, product_id, variant_id, name, image, size, color, quantity, price_lkr, price_usd
+order_status_history → id, order_id, status, note, created_by, created_at
+discount_codes    → id, code, type (percentage/fixed), value, min_order, max_uses, used_count, expires_at, is_active
+banners           → id, title, subtitle, image_url, link, position, is_active
+newsletter_subscribers → id, email, subscribed_at
+store_settings    → id, key, value
+team_invites      → id, email, role, invited_by, accepted_at, created_at
+payment_config    → id, mode (sandbox/live), sandbox_merchant_id, sandbox_merchant_secret, sandbox_app_id, sandbox_app_secret, live_merchant_id, live_merchant_secret, live_app_id, live_app_secret
+```
 
-### Product Catalog
-- Category pages with grid/list view toggle
-- Filters (size, color, price range, category)
-- Sort options (newest, price low-high, price high-low, popularity)
-- Quick-view modal on hover/click
+RLS policies on all tables. `has_role()` security definer function for admin checks. Auto-create profile trigger on signup.
 
-### Product Detail Page
-- Large image gallery with zoom capability
-- Size selector, color selector, quantity picker
-- "Add to Cart" and "Buy Now" buttons
-- Product description, materials, care instructions tabs
-- Related products section
-- Customer reviews section
-
-### Shopping Cart
-- Slide-out cart drawer
-- Quantity adjustment, item removal
-- Order summary with subtotal, shipping estimate
-- "Proceed to Checkout" CTA
-
-### Checkout Flow
-- Multi-step checkout: Shipping info → Shipping method → Payment → Confirmation
-- PayHere payment gateway integration (sandbox first, then live)
-- Order confirmation page with order number and summary
-- Confirmation email trigger
-
-### Customer Accounts
-- Registration and login pages (email/password)
-- Customer dashboard: order history, order tracking status
-- Saved addresses management
-- Wishlist functionality
-- Profile editing (name, email, password change)
-- Password reset flow with email verification
-
-### Search
-- Search bar with instant results dropdown
-- Full search results page with filters
+Seed with **demo products** (8-12 items across categories with realistic names/prices).
 
 ---
 
-## 2. Admin Panel (`/admin`)
+## 2. Authentication
+
+- Wire Login page to backend auth (email/password signup + login)
+- Email verification required (no auto-confirm)
+- Password reset flow with `/reset-password` page
+- Auth context provider wrapping the app
+- Protected routes: `/account/*` requires login, `/admin/*` requires admin role
+- Account page shows real order history, addresses, wishlist
+- Logout functionality
+
+---
+
+## 3. Marquee Banner
+
+Replace the static "FREE SHIPPING ON ORDERS OVER LKR 15,000" text in the Navbar top bar with a CSS marquee animation — gold text on black background, continuously scrolling.
+
+---
+
+## 4. Hero Background Video
+
+Generate a short looping video/animation using AI image generation for the hero section. The hero will have a dark, moody fashion-themed background with overlay gradients.
+
+---
+
+## 5. Glassmorphism + God-Level Animations
+
+### Admin Panel
+- All stat cards and content cards get glassmorphism: `backdrop-blur-xl`, semi-transparent backgrounds, subtle borders with gradient highlights
+- Staggered entrance animations on dashboard cards
+- Smooth page transitions between admin sections
+- Hover effects with scale and glow on interactive elements
+
+### Storefront
+- Page transition animations (framer-motion `AnimatePresence` on route changes)
+- Product card hover: image zoom + overlay with quick-view
+- Parallax scrolling on hero and lifestyle sections
+- Staggered grid reveals on scroll
+- Smooth skeleton loading states
+- Cart drawer spring animation
+- Button press micro-interactions (scale down on click)
+- Cursor-following subtle effects on hero
+
+---
+
+## 6. Resend Email Integration
+
+### Setup
+- Request `RESEND_API_KEY` secret from user
+- Create an edge function `send-order-email` that uses Resend API
+
+### Email Template (matching the uploaded reference exactly)
+- Header with Island Couture branding + nav links
+- "Hooray! Your order has been confirmed." headline
+- Order status tracker (Confirmed → Shipped → Delivered) with icons
+- "View Your Order" CTA button
+- Order details section: confirmation number, product image, item details, price
+- Shipping address + payment method + cost breakdown
+- Contact section (Chat, Call, Email, Text)
+- FAQ/promo section
+- Free shipping upsell section
+- Footer with social icons + unsubscribe
+
+### Trigger points
+- Order confirmation email on successful payment
+- Shipping notification when admin updates status to "Shipped"
+- Delivery confirmation when status changes to "Delivered"
+
+---
+
+## 7. PayHere Integration
+
+### Architecture
+- Edge function `payhere-checkout` generates the payment hash and returns form data
+- Edge function `payhere-notify` handles PayHere server callback (IPN)
+- Frontend redirects to PayHere hosted payment page
+
+### Live vs Demo Toggle (Admin Settings)
+- `payment_config` table stores both sets of credentials
+- Admin Settings page has a toggle switch: **SANDBOX** / **LIVE**
+- 8 secrets total stored in the database (not edge function secrets):
+  - Sandbox: merchant_id, merchant_secret, app_id, app_secret
+  - Live: merchant_id, merchant_secret, app_id, app_secret
+- The edge function reads the active mode from `payment_config` and uses the corresponding credentials
+- Clear visual indicator in admin showing current mode
+
+---
+
+## 8. Admin Panel — Full Functionality
 
 ### Dashboard
-- Overview cards: total revenue, orders today, pending orders, total customers
-- Sales chart (daily/weekly/monthly)
-- Recent orders list
-- Low stock alerts
+- Real stats from database (revenue, orders, customers)
+- Sales chart using Recharts (already installed)
+- Recent orders list with status badges
+- Low stock alerts from product_variants
 
-### Product Management
-- Product list with search, filter, and pagination
-- Add/edit product form: name, description, images (multiple), price (LKR & USD), sizes, colors, stock quantity, category assignment, visibility toggle
-- Bulk actions (activate, deactivate, delete)
+### Products
+- CRUD with image upload to storage bucket
+- Variant management (size/color/stock)
+- Bulk visibility toggle
 
-### Category Management
-- Create, edit, reorder, and delete categories
-- Category image upload
-- Toggle category visibility on storefront
-- Nested subcategories support
+### Categories
+- CRUD with drag-to-reorder
+- Image upload, visibility toggle
 
-### Order Management
-- Orders list with status filters (pending, processing, shipped, delivered, cancelled)
-- Order detail view with customer info, items, payment status, shipping info
-- Update order status workflow
-- Order notes
+### Orders
+- List with status filters
+- Order detail modal with timeline
+- Status update workflow (triggers email notifications)
 
-### Customer Management
-- Customer list with search
-- Customer detail view with order history
-- Account status management
+### Customers
+- List from profiles table
+- View customer order history
 
-### Team Management
-- Invite team members by email
-- Role assignment (admin, manager, viewer)
-- Activity log
+### Team
+- Invite by email (inserts to team_invites + user_roles)
+- Role management (admin/moderator/user)
 
 ### Marketing
-- Discount codes / coupon management (percentage or fixed amount, expiry date, usage limits)
-- Banner management for homepage hero section
-- Newsletter subscriber list
+- Discount code CRUD
+- Banner management
+- Newsletter subscriber count
 
-### Budget & Billing
-- Revenue reports with date range filters
-- Expense tracking
-- PayHere transaction history
-- Export reports (CSV)
+### Budget
+- Revenue chart by date range
+- Order totals aggregation
 
 ### Settings
-- Store settings (name, logo, contact info)
-- Shipping rates configuration
-- Tax settings
-- Payment gateway settings (PayHere credentials)
+- Store info fields (persisted to store_settings)
+- PayHere credentials with Live/Demo toggle
+- Shipping rates config
 
 ---
 
-## 3. Legal / Policy Pages
-- **Privacy Policy** — data collection, usage, cookies, third-party sharing
-- **Terms & Conditions** — user responsibilities, intellectual property, limitations
-- **Return Policy** — return window, conditions, refund process
-- **Shipping Policy** — shipping methods, timelines, costs, international shipping info
+## 9. Storage Bucket
 
-All styled consistently with the dark premium theme.
+Create a `product-images` storage bucket for product and category images with public read access.
 
 ---
 
-## 4. Technical Foundation
+## Technical Notes
 
-### Database (Supabase)
-- Products, categories, product images, product variants (size/color/stock)
-- Customers (linked to Supabase auth), addresses, wishlists
-- Orders, order items, order status history
-- Discount codes, newsletter subscribers
-- Team members with role-based access (admin roles in separate `user_roles` table)
-- Store settings, banners
+- **Resend**: Requires the user to provide a `RESEND_API_KEY`. Will be stored as an edge function secret.
+- **PayHere credentials**: Stored in the `payment_config` database table (encrypted at rest), not as edge function secrets. The edge function reads them via service role.
+- **8 credential fields** for PayHere: sandbox (merchant_id, merchant_secret, app_id, app_secret) + live (merchant_id, merchant_secret, app_id, app_secret). All managed from admin Settings page.
+- Dark theme is always on — the `:root` variables will be updated to match the `.dark` theme as default.
 
-### Authentication
-- Supabase Auth for both customers and admin users
-- Role-based access control — admin panel protected by role check
-- Full password reset flow
+---
 
-### Payment
-- PayHere integration for LKR/USD payments
-- Checkout API via Supabase Edge Function for secure payment processing
+## Execution Order
 
-### Key UX Details
-- Fully responsive — mobile-first design
-- Smooth page transitions and micro-animations
-- Loading skeletons for all data-heavy pages
-- Toast notifications for cart actions, order updates
-- Dark mode by default (matching the premium aesthetic)
+1. Database migration (all tables + seed data + RLS + functions)
+2. Storage bucket creation
+3. Auth context + protected routes + login/register/reset-password
+4. Marquee banner + hero video + glassmorphism CSS
+5. God-level animations across all components
+6. Admin panel wired to real data (all CRUD operations)
+7. Storefront wired to real data (products, cart, checkout)
+8. Request Resend API key → email edge function
+9. PayHere edge functions + checkout flow
+10. Final polish and integration testing
 
