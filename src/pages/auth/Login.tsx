@@ -1,10 +1,48 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import StorefrontLayout from '@/components/layout/StorefrontLayout';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const Login = () => {
   const [isRegister, setIsRegister] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { signIn, signUp } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    if (isRegister) {
+      if (password !== confirmPassword) {
+        toast.error('Passwords do not match');
+        setLoading(false);
+        return;
+      }
+      const { error } = await signUp(email, password, firstName, lastName);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Account created! Please check your email to verify your account.');
+      }
+    } else {
+      const { error } = await signIn(email, password);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Welcome back!');
+        navigate('/');
+      }
+    }
+    setLoading(false);
+  };
 
   return (
     <StorefrontLayout>
@@ -17,22 +55,27 @@ const Login = () => {
             {isRegister ? 'Join the Island Couture movement' : 'Welcome back'}
           </p>
 
-          <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {isRegister && (
               <div className="grid grid-cols-2 gap-4">
-                <input placeholder="First Name" className="bg-surface border border-border px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground" />
-                <input placeholder="Last Name" className="bg-surface border border-border px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground" />
+                <input placeholder="First Name" value={firstName} onChange={e => setFirstName(e.target.value)} required className="bg-surface border border-border px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground" />
+                <input placeholder="Last Name" value={lastName} onChange={e => setLastName(e.target.value)} required className="bg-surface border border-border px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground" />
               </div>
             )}
-            <input placeholder="Email" type="email" className="w-full bg-surface border border-border px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground" />
-            <input placeholder="Password" type="password" className="w-full bg-surface border border-border px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground" />
+            <input placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-surface border border-border px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground" />
+            <input placeholder="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} className="w-full bg-surface border border-border px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground" />
             {isRegister && (
-              <input placeholder="Confirm Password" type="password" className="w-full bg-surface border border-border px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground" />
+              <input placeholder="Confirm Password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required className="w-full bg-surface border border-border px-4 py-3 text-sm outline-none focus:border-primary placeholder:text-muted-foreground" />
             )}
-            <button className="w-full bg-primary text-primary-foreground py-3.5 font-display text-sm tracking-[0.3em] hover:bg-primary/90 transition-colors">
-              {isRegister ? 'CREATE ACCOUNT' : 'SIGN IN'}
-            </button>
-          </div>
+            <motion.button
+              type="submit"
+              disabled={loading}
+              whileTap={{ scale: 0.97 }}
+              className="w-full bg-primary text-primary-foreground py-3.5 font-display text-sm tracking-[0.3em] hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'PLEASE WAIT...' : isRegister ? 'CREATE ACCOUNT' : 'SIGN IN'}
+            </motion.button>
+          </form>
 
           {!isRegister && (
             <Link to="/forgot-password" className="block text-center text-sm text-muted-foreground hover:text-foreground mt-4 tracking-wider">
