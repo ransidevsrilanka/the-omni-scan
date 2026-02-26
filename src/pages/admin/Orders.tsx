@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import type { Database } from '@/integrations/supabase/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -14,17 +15,17 @@ const AdminOrders = () => {
   const { formatPrice } = useCurrency();
 
   const fetchOrders = async () => {
-    let query = supabase.from('orders').select('*, profiles!orders_user_id_fkey(first_name, last_name, phone), order_items(*)').order('created_at', { ascending: false });
-    if (filter !== 'All') query = query.eq('status', filter.toLowerCase());
+    let query = supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false });
+    if (filter !== 'All') query = query.eq('status', filter.toLowerCase() as Database['public']['Enums']['order_status']);
     const { data } = await query;
     setOrders(data || []);
   };
 
   useEffect(() => { fetchOrders(); }, [filter]);
 
-  const updateStatus = async (orderId: string, newStatus: string) => {
+  const updateStatus = async (orderId: string, newStatus: Database['public']['Enums']['order_status']) => {
     await supabase.from('orders').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', orderId);
-    await supabase.from('order_status_history').insert({ order_id: orderId, status: newStatus as any, note: `Status changed to ${newStatus}` });
+    await supabase.from('order_status_history').insert({ order_id: orderId, status: newStatus, note: `Status changed to ${newStatus}` });
     toast.success(`Order updated to ${newStatus}`);
     fetchOrders();
     if (selectedOrder?.id === orderId) setSelectedOrder({ ...selectedOrder, status: newStatus });
@@ -54,7 +55,7 @@ const AdminOrders = () => {
               <div className="mb-4">
                 <p className="text-xs tracking-wider text-muted-foreground mb-2">STATUS</p>
                 <div className="flex gap-2 flex-wrap">
-                  {['pending', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => (
+                  {(['pending', 'processing', 'shipped', 'delivered', 'cancelled'] as const).map(s => (
                     <button key={s} onClick={() => updateStatus(selectedOrder.id, s)}
                       className={`px-3 py-1.5 text-xs tracking-wider border ${selectedOrder.status === s ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground hover:border-foreground'}`}>
                       {s.toUpperCase()}
@@ -65,8 +66,8 @@ const AdminOrders = () => {
 
               <div className="mb-4">
                 <p className="text-xs tracking-wider text-muted-foreground mb-2">CUSTOMER</p>
-                <p className="text-sm">{selectedOrder.profiles?.first_name} {selectedOrder.profiles?.last_name}</p>
-                <p className="text-xs text-muted-foreground">{selectedOrder.profiles?.phone}</p>
+                <p className="text-sm">{(selectedOrder.shipping_address as any)?.firstName} {(selectedOrder.shipping_address as any)?.lastName}</p>
+                <p className="text-xs text-muted-foreground">{(selectedOrder.shipping_address as any)?.phone}</p>
               </div>
 
               <div className="mb-4">
@@ -109,7 +110,7 @@ const AdminOrders = () => {
               <motion.tr key={order.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
                 onClick={() => setSelectedOrder(order)} className="border-b border-border/50 hover:bg-surface/30 transition-colors cursor-pointer">
                 <td className="px-4 py-3 tracking-wider">{order.order_number}</td>
-                <td className="px-4 py-3 text-muted-foreground">{order.profiles?.first_name} {order.profiles?.last_name}</td>
+                <td className="px-4 py-3 text-muted-foreground">{(order.shipping_address as any)?.firstName} {(order.shipping_address as any)?.lastName}</td>
                 <td className="px-4 py-3">{formatPrice(order.total_lkr, order.total_usd)}</td>
                 <td className="px-4 py-3">
                   <span className={`text-xs tracking-wider px-2 py-1 ${order.status === 'delivered' ? 'bg-green-500/20 text-green-400' : order.status === 'cancelled' ? 'bg-destructive/20 text-destructive' : 'bg-primary/20 text-primary'}`}>

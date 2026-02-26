@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StorefrontLayout from '@/components/layout/StorefrontLayout';
 import { useCart } from '@/contexts/CartContext';
@@ -15,6 +15,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [shipping, setShipping] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', city: '', postalCode: '' });
+  const formRef = useRef<HTMLFormElement>(null);
 
   const shippingCost = totalLKR >= 15000 ? 0 : 350;
 
@@ -22,47 +23,121 @@ const Checkout = () => {
     if (!user) return;
     setLoading(true);
 
-    const { data: order, error } = await supabase.from('orders').insert({
-      user_id: user.id,
-      order_number: '', // will be set by trigger
-      subtotal_lkr: totalLKR,
-      subtotal_usd: totalUSD,
-      shipping_lkr: shippingCost,
-      shipping_usd: shippingCost > 0 ? 1.15 : 0,
-      total_lkr: totalLKR + shippingCost,
-      total_usd: totalUSD + (shippingCost > 0 ? 1.15 : 0),
-      shipping_address: shipping,
-      payment_method: 'payhere',
-      payment_status: 'pending',
-    }).select().single();
+    try {
+      // 1. Create order
+      const { data: order, error } = await supabase.from('orders').insert({
+        user_id: user.id,
+        order_number: '',
+        subtotal_lkr: totalLKR,
+        subtotal_usd: totalUSD,
+        shipping_lkr: shippingCost,
+        shipping_usd: shippingCost > 0 ? 1.15 : 0,
+        total_lkr: totalLKR + shippingCost,
+        total_usd: totalUSD + (shippingCost > 0 ? 1.15 : 0),
+        shipping_address: shipping,
+        payment_method: 'payhere',
+        payment_status: 'pending',
+      }).select().single();
 
-    if (error || !order) { toast.error(error?.message || 'Failed to create order'); setLoading(false); return; }
+      if (error || !order) { toast.error(error?.message || 'Failed to create order'); setLoading(false); return; }
 
-    // Insert order items
-    const orderItems = items.map(item => ({
-      order_id: order.id,
-      product_id: item.productId,
-      name: item.name,
-      image: item.image,
-      size: item.size,
-      color: item.color,
-      quantity: item.quantity,
-      price_lkr: item.priceLKR,
-      price_usd: item.priceUSD,
-    }));
-    await supabase.from('order_items').insert(orderItems);
+      // 2. Insert order items
+      const orderItems = items.map(item => ({
+        order_id: order.id,
+        product_id: item.productId,
+        name: item.name,
+        image: item.image,
+        size: item.size,
+        color: item.color,
+        quantity: item.quantity,
+        price_lkr: item.priceLKR,
+        price_usd: item.priceUSD,
+      }));
+      await supabase.from('order_items').insert(orderItems);
 
-    // Initial status history
-    await supabase.from('order_status_history').insert({ order_id: order.id, status: 'pending', note: 'Order placed' });
+      // 3. Initial status history
+      await supabase.from('order_status_history').insert({ order_id: order.id, status: 'pending', note: 'Order placed' });
 
-    clearCart();
-    toast.success('Order placed successfully!');
-    navigate('/account');
-    setLoading(false);
+      // 4. Call PayHere checkout edge function
+      const totalAmount = totalLKR + shippingCost;
+      const { data: payhereData, error: payhereError } = await supabase.functions.invoke('payhere-checkout', {
+        body: {
+          order_id: order.id,
+          amount: totalAmount,
+          currency: 'LKR',
+          first_name: shipping.firstName,
+          last_name: shipping.lastName,
+          email: shipping.email || user.email,
+          phone: shipping.phone,
+          address: shipping.address,
+          city: shipping.city,
+          items_description: items.map(i => i.name).join(', '),
+        }
+      });
+
+      if (payhereError || !payhereData?.merchant_id) {
+        // Fallback: mark order as placed without payment redirect
+        clearCart();
+        toast.success('Order placed! Payment will be processed.');
+        navigate('/account');
+        setLoading(false);
+        return;
+      }
+
+      // 5. Build hidden form and submit to PayHere
+      const form = formRef.current;
+      if (!form) return;
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const notifyUrl = `${supabaseUrl}/functions/v1/payhere-notify`;
+      const returnUrl = `${window.location.origin}/account`;
+      const cancelUrl = `${window.location.origin}/checkout`;
+
+      // Set form action
+      form.action = payhereData.payment_url;
+
+      // Clear and set hidden fields
+      form.innerHTML = '';
+      const fields: Record<string, string> = {
+        merchant_id: payhereData.merchant_id,
+        return_url: returnUrl,
+        cancel_url: cancelUrl,
+        notify_url: notifyUrl,
+        order_id: order.id,
+        items: items.map(i => i.name).join(', '),
+        currency: 'LKR',
+        amount: payhereData.amount,
+        first_name: shipping.firstName,
+        last_name: shipping.lastName,
+        email: shipping.email || user.email || '',
+        phone: shipping.phone,
+        address: shipping.address,
+        city: shipping.city,
+        country: 'Sri Lanka',
+        hash: payhereData.hash,
+      };
+
+      Object.entries(fields).forEach(([name, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      });
+
+      clearCart();
+      form.submit();
+    } catch (err) {
+      toast.error('Something went wrong');
+      setLoading(false);
+    }
   };
 
   return (
     <StorefrontLayout>
+      {/* Hidden form for PayHere redirect */}
+      <form ref={formRef} method="POST" style={{ display: 'none' }} />
+
       <div className="container py-12 max-w-4xl">
         <h1 className="font-display text-3xl tracking-[0.15em] mb-10">CHECKOUT</h1>
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
