@@ -65,10 +65,10 @@ const AdminProducts = () => {
 
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="font-display text-2xl tracking-[0.15em]">PRODUCTS</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <h1 className="font-display text-xl sm:text-2xl tracking-[0.15em]">PRODUCTS</h1>
         <motion.button whileTap={{ scale: 0.95 }} onClick={() => { setShowForm(true); setEditProduct(null); setForm({ name: '', slug: '', description: '', materials: '', care: '', price_lkr: '', price_usd: '', category_id: '', is_visible: true, is_featured: false }); }}
-          className="bg-primary text-primary-foreground px-6 py-2.5 text-sm font-display tracking-[0.15em] hover:bg-primary/90 transition-colors flex items-center gap-2">
+          className="bg-primary text-primary-foreground px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-display tracking-[0.15em] hover:bg-primary/90 transition-colors flex items-center gap-2 w-fit">
           <Plus className="h-4 w-4" /> ADD PRODUCT
         </motion.button>
       </div>
@@ -144,8 +144,8 @@ const AdminProducts = () => {
         </div>
       </div>
 
-      <div className="glass-card overflow-hidden rounded-sm">
-        <table className="w-full text-sm">
+      <div className="glass-card overflow-hidden rounded-sm overflow-x-auto">
+        <table className="w-full text-sm min-w-[600px]">
           <thead>
             <tr className="border-b border-border bg-surface/50">
               <th className="text-left px-4 py-3 text-xs tracking-[0.15em] text-muted-foreground font-medium">PRODUCT</th>

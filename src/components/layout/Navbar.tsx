@@ -53,7 +53,7 @@ const Navbar = () => {
             <Menu className="h-5 w-5" />
           </button>
 
-          <Link to="/" className="font-display text-2xl md:text-3xl tracking-[0.3em] font-bold">
+          <Link to="/" className="font-display text-lg sm:text-2xl md:text-3xl tracking-[0.15em] sm:tracking-[0.3em] font-bold">
             ISLAND COUTURE
           </Link>
 
@@ -65,7 +65,7 @@ const Navbar = () => {
             ))}
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => setCurrency(currency === 'LKR' ? 'USD' : 'LKR')}
               className="hidden sm:flex items-center gap-1 text-xs tracking-wider text-muted-foreground hover:text-foreground transition-colors"

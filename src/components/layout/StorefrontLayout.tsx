@@ -7,7 +7,7 @@ const StorefrontLayout = ({ children }: { children: ReactNode }) => {
   return (
     <div className="grain min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 pt-[105px]">
+      <main className="flex-1 pt-[90px] sm:pt-[105px]">
         {children}
       </main>
       <Footer />

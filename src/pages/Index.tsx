@@ -42,7 +42,7 @@ const Index = () => {
       <section className="relative h-[90vh] flex items-center justify-center overflow-hidden bg-surface">
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/30 to-background z-10" />
         <motion.div initial={{ opacity: 0, y: 30, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }} className="relative z-20 text-center px-6">
-          <motion.h1 className="font-display text-5xl md:text-7xl lg:text-8xl tracking-[0.15em] mb-6 leading-[0.95]"
+          <motion.h1 className="font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl tracking-[0.1em] sm:tracking-[0.15em] mb-6 leading-[0.95]"
             initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.8 }}>
             DARE TO<br /><span className="text-primary">STAND OUT</span>
           </motion.h1>
