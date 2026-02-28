@@ -92,8 +92,8 @@ const AdminOrders = () => {
         )}
       </AnimatePresence>
 
-      <div className="glass-card overflow-hidden rounded-sm">
-        <table className="w-full text-sm">
+      <div className="glass-card overflow-hidden rounded-sm overflow-x-auto">
+        <table className="w-full text-sm min-w-[600px]">
           <thead>
             <tr className="border-b border-border bg-surface/50">
               <th className="text-left px-4 py-3 text-xs tracking-[0.15em] text-muted-foreground font-medium">ORDER</th>

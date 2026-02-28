@@ -30,8 +30,8 @@ const AdminCustomers = () => {
         <input placeholder="Search customers..." value={search} onChange={e => setSearch(e.target.value)} className="w-full bg-surface border border-border pl-10 pr-4 py-2.5 text-sm outline-none focus:border-primary placeholder:text-muted-foreground" />
       </div>
 
-      <div className="glass-card overflow-hidden rounded-sm">
-        <table className="w-full text-sm">
+      <div className="glass-card overflow-hidden rounded-sm overflow-x-auto">
+        <table className="w-full text-sm min-w-[500px]">
           <thead>
             <tr className="border-b border-border bg-surface/50">
               <th className="text-left px-4 py-3 text-xs tracking-[0.15em] text-muted-foreground font-medium">CUSTOMER</th>

@@ -78,7 +78,7 @@ const ProductDetail = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {images.length > 0 ? images.map((img: any, i: number) => (
                 <div key={i} className={`bg-surface overflow-hidden ${i === 0 ? 'col-span-2 aspect-[4/5]' : 'aspect-square'}`}>
                   <img src={img.url} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
@@ -89,7 +89,7 @@ const ProductDetail = () => {
             </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="lg:sticky lg:top-32 lg:self-start">
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="lg:sticky lg:top-32 self-start">
             <p className="text-xs text-primary tracking-[0.3em] mb-2">{product.categories?.name?.toUpperCase()}</p>
             <h1 className="font-display text-3xl md:text-4xl tracking-[0.1em] mb-3">{product.name.toUpperCase()}</h1>
             <p className="text-xl mb-8">{formatPrice(product.price_lkr, product.price_usd)}</p>

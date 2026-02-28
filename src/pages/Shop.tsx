@@ -39,9 +39,9 @@ const Shop = () => {
     <StorefrontLayout>
       <div className="container py-12">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="font-display text-3xl md:text-4xl tracking-[0.15em]">SHOP ALL</h1>
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <h1 className="font-display text-2xl sm:text-3xl md:text-4xl tracking-[0.15em]">SHOP ALL</h1>
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <button onClick={() => setFiltersOpen(!filtersOpen)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground tracking-wider transition-colors">
                 <SlidersHorizontal className="h-4 w-4" /> FILTERS
               </button>
@@ -74,7 +74,7 @@ const Shop = () => {
           )}
         </AnimatePresence>
 
-        <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6' : 'space-y-4'}>
+        <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6' : 'space-y-4'}>
           {products.map((product, i) => (
             <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               {viewMode === 'grid' ? (

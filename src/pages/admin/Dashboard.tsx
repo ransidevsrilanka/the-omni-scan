@@ -38,7 +38,7 @@ const AdminDashboard = () => {
       setLowStock((variantsRes.data || []).slice(0, 5));
 
       // Recent orders
-      const { data: recent } = await supabase.from('orders').select('*, profiles!orders_user_id_fkey(first_name, last_name)').order('created_at', { ascending: false }).limit(5);
+      const { data: recent } = await supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(5);
       setRecentOrders(recent || []);
 
       // Chart: last 7 days
@@ -66,7 +66,7 @@ const AdminDashboard = () => {
     <AdminLayout>
       <h1 className="font-display text-2xl tracking-[0.15em] mb-8">DASHBOARD</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {statCards.map((card, i) => (
           <motion.div
             key={card.label}
@@ -123,7 +123,7 @@ const AdminDashboard = () => {
                 <div key={order.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
                   <div>
                     <p className="text-sm tracking-wider">{order.order_number}</p>
-                    <p className="text-xs text-muted-foreground">{order.profiles?.first_name} {order.profiles?.last_name}</p>
+                    <p className="text-xs text-muted-foreground">{(order.shipping_address as any)?.firstName} {(order.shipping_address as any)?.lastName}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm">{formatPrice(order.total_lkr, order.total_usd)}</p>

@@ -140,8 +140,8 @@ const Checkout = () => {
 
       <div className="container py-12 max-w-4xl">
         <h1 className="font-display text-3xl tracking-[0.15em] mb-10">CHECKOUT</h1>
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="lg:col-span-3 space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="lg:col-span-3 space-y-8 order-2 lg:order-1">
             <div>
               <h2 className="font-display text-lg tracking-[0.15em] mb-4">SHIPPING INFORMATION</h2>
               <div className="space-y-4">
@@ -172,7 +172,7 @@ const Checkout = () => {
             </motion.button>
           </motion.div>
 
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 order-1 lg:order-2">
             <div className="glass-card p-6 sticky top-32 rounded-sm">
               <h3 className="font-display text-sm tracking-[0.2em] mb-6">ORDER SUMMARY</h3>
               <div className="space-y-3 mb-4">
